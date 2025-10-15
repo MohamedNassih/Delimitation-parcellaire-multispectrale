@@ -1,0 +1,5 @@
+pairkey,REG,RED,NIR,GRE,status,quarantine,quarantine_reason
+IMG_210204_095446_0090_,data\multispectral-images\REG\IMG_210204_095446_0090_REG.tif,data\multispectral-images\RED\IMG_210204_095446_0090_RED.tif,data\multispectral-images\NIR\IMG_210204_095446_0090_NIR.tif,,INCOMPLETE,yes,missing_GRE
+IMG_210204_095447_0090_,,,,data\multispectral-images\GRE\IMG_210204_095447_0090_GRE.tif,INCOMPLETE,yes,"missing_REG,missing_RED,missing_NIR"
+IMG_210204_100144_0254_,data\multispectral-images\REG\IMG_210204_100144_0254_REG.tif,data\multispectral-images\RED\IMG_210204_100144_0254_RED.tif,data\multispectral-images\NIR\IMG_210204_100144_0254_NIR.tif,,INCOMPLETE,yes,missing_GRE
+IMG_210204_100145_0254_,,,,data\multispectral-images\GRE\IMG_210204_100145_0254_GRE.tif,INCOMPLETE,yes,"missing_REG,missing_RED,missing_NIR"

@@ -1,0 +1,69 @@
+# Étape 1 — Inventaire & Alignement (paramètres de préparation)
+# Doc 02 : Data Book — Inventaire, Alignement & Pré‑traitements
+
+io:
+  root: data/multispectral-images           # répertoire racine (contient REG/, RED/, NIR/, GRE/)
+  bands:
+    REG: REG
+    RED: RED
+    NIR: NIR
+    GRE: GRE
+  pair_regex: "^(IMG_\\d{6,}_\\d{6,}_\\d{4}_)"   # préfixe commun des paires
+  band_suffixes:
+    REG: "_REG.tif"
+    RED: "_RED.tif"
+    NIR: "_NIR.tif"
+    GRE: "_GRE.tif"
+
+output:
+  aligned_dir: artifacts/aligned
+  quarantine_dir: artifacts/quarantine
+  inventory_csv: artifacts/reports/inventory.csv
+  alignment_csv: artifacts/reports/alignment.csv
+  integrity_csv: artifacts/reports/integrity.csv
+  write_dtype: float32
+  assert_size: [1024, 1024]
+
+normalize:
+  method: percentile
+  p_low: 2
+  p_high: 98
+  clip: true
+  eps: 1.0e-6
+  to_float32: true
+
+resize:
+  target_size: [1024, 1024]
+  mode: bilinear       # bilinear partout pour cohérence (OpenCV INTER_LINEAR)
+  align_corners: false
+  pad_or_crop: center  # sécurité si tailles inattendues
+
+alignment:
+  reference_band: RED
+  ecc:
+    enabled: false
+    # enabled: true
+    # OpenCV ECC — on utilise l'approx. euclidienne (translation+rotation légère)
+    # warp_mode: euclidean        # {translation, euclidean, affine}
+    # n_iter: 100
+    # term_eps: 1.0e-6
+    # pyr_levels: 4
+    # gauss_preblur: 1.0          # sigma en pixels (0 = off)
+  orb_fallback:
+    enabled: true
+    n_features: 3000
+    scale_factor: 1.2
+    n_levels: 8
+    fastThreshold: 0
+    ransacReprojThreshold: 3.0
+    maxIters: 5000
+    confidence: 0.999
+
+quality:
+  saturation_max: 0.02    # fraction de pixels ~0 ou ~1 tolérée après normalisation
+  blur_var_min: 30        # variance du Laplacien minimale
+  ssim_edges_min: 0.60    # SSIM sur cartes d'arêtes (réf vs autres bandes)
+
+runtime:
+  num_workers: 0          # Windows-friendly (évite spawn massif)
+  batch_size:

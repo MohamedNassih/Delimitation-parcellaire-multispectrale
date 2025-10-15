@@ -1,0 +1,77 @@
+# Étape 3 — Masques NV/VH, Watershed, Post‑process
+# Doc 04 : Annotation & Masking Protocol — pseudo‑labels → Gold
+
+io:
+  indices_dir: artifacts/indices
+  boundary_maps_dir: artifacts/boundary_maps
+  masks_raw_dir: artifacts/masks_raw
+  masks_filtered_dir: artifacts/masks_filtered
+  masks_final_dir: artifacts/masks_final
+  reports_dir: artifacts/reports
+  assert_size: [1024, 1024]
+  fused_suffix: "_S_fused.tif"   # produit par l'étape indices
+
+numerics:
+  eps: 1.0e-6
+  float_dtype: float32
+
+# --- SEEDS (générés depuis indices & S_fused) ---
+seeds:
+  # Non‑Végétation stricte (routes/bâtis/sol nu)
+  NV_strict:
+    ndvi_max: 0.15
+    gndvi_max: 0.18
+    s_fused_max: 0.35         # peu d'arêtes localement
+    texture_max: 0.20         # écart‑type local (fenêtre 9×9)
+    min_area_px: 32
+    open_radius: 1            # nettoie petit bruit sur seeds
+  # Végétation homogène stricte (intérieurs de parcelle)
+  VH_strict:
+    ndvi_min: 0.20
+    s_fused_max: 0.40
+    texture_max: 0.25
+    min_area_px: 32
+    open_radius: 1
+
+# --- WATERSHED sur relief 1−S_fused ---
+watershed:
+  # relief: one_minus_s_fused   # 1 - S_fused
+  clean_seeds_dilate: 2       # dilate légère pour fusionner micro‑trous
+  enforce_border_black: true  # bords noirs (pas de boundary forcé au bord)
+  min_basin_area_px: 256      # petite cuvette ignorée
+  connectivity: 4             # 4‑voisins
+  min_seed_cov: 0.005        
+  minima_percentile: 35.0    
+  use_full_mask: true        
+
+# --- FILTRE PAR BLOCS ---
+block_filter:
+  block_size: 50
+  # neighbor_rule: strict_4     # transitions autorisées seulement en 4‑voisins
+  white_ratio_max: 0.12       # cible 1–8% de pixels blancs (boundary)
+  soften_margin_px: 2         # lissage léger aux frontières des blocs
+
+# --- GARDE‑Fous & POST‑PROCESS ---
+postprocess:
+  skeleton:
+    enabled: false           # pour l’instant on évite d’affiner trop tôt
+    buffer_radius: 1
+  keep_largest_black:
+    enabled: false           # désactivé
+  closing_radius: 0
+  
+# --- CONTRÔLES & LOGS ---
+quality:
+  expected_white_ratio_min: 0.01
+  expected_white_ratio_max: 0.08
+  clamp_to_expected_range: true
+
+runtime:
+  num_workers: 0
+  batch_size: 1
+  save_debug: true
+  log_level: INFO
+
+outputs:
+  save_png_quicklook: true
+  save_csv_stats: true

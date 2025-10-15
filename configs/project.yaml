@@ -1,0 +1,66 @@
+# AgriEdge — Projet de délimitation parcellaire (CPU-only)
+# Doc source : 01_Blueprint & Repo Structure (CPU, VSCode)
+
+seed: 2025
+
+project:
+  name: AgriEdge-FieldBoundary
+  cpu_only: true
+  python_min: "3.12"
+  size: [1024, 1024]        # H, W cibles pour toutes les scènes
+  mask_convention:          # 1 = boundary, 0 = field
+    boundary: 1
+    field: 0
+
+paths:
+  data_root: data/multispectral-images
+  bands:                     # Sous-dossiers attendus
+    REG: REG
+    RED: RED
+    NIR: NIR
+    GRE: GRE
+  artifacts_root: artifacts
+  aligned_dir: artifacts/aligned
+  indices_dir: artifacts/indices
+  boundary_maps_dir: artifacts/boundary_maps
+  masks_raw_dir: artifacts/masks_raw
+  masks_filtered_dir: artifacts/masks_filtered
+  masks_final_dir: artifacts/masks_final
+  patches_dir: artifacts/patches
+  reports_dir: artifacts/reports
+  logs_dir: logs
+
+pairing:
+  # Préfixe commun avant suffixe de bande, ex: IMG_YYYYMMDD_HHMMSS_####_
+  pair_regex: "^(IMG_\\d{6,}_\\d{6,}_\\d{4}_)"
+  band_suffixes:
+    REG: "_REG.tif"
+    RED: "_RED.tif"
+    NIR: "_NIR.tif"
+    GRE: "_GRE.tif"
+
+prepare_defaults:
+  reference_band: RED  # ou NIR si végétation dominante
+  normalize:
+    method: percentile
+    p_low: 2
+    p_high: 98
+    eps: 1.0e-6
+
+quality_gates:
+  saturation_max: 0.02       # near-0 / near-max
+  blur_var_min: 30           # variance du Laplacien (min)
+  ssim_edges_min: 0.60       # seuil d’alignement (bords)
+
+logging:
+  level: INFO
+  write_versions: true       # journaliser versions libs dans logs/runs.csv
+
+reproducibility:
+  deterministic_ops: true
+  numpy_print_precision: 4
+
+# Remarques
+# - Toutes les images doivent être forcées en float32 [0,1] après normalisation p2–p98.
+# - Ne jamais inverser la convention des masques (1=boundary, 0=field).
+# - Traiter scène par scène (streaming), pas de chargement massif en RAM.

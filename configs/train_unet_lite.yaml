@@ -1,0 +1,81 @@
+# Étape 4 — Entraînement & Évaluation (U-Net Lite, CPU-only)
+# Doc 05 : Modeling, Training & Evaluation Playbook — Agri Edge
+
+seed: 2025
+
+io:
+  aligned_dir: artifacts/aligned
+  masks_dir: artifacts/masks_final
+  reports_dir: artifacts/reports
+  models_dir: artifacts/models
+
+dataset:
+  channels: [REG, RED, NIR, GRE]
+  patch_size: [512, 512]
+  overlap: 64
+  boundary_value: 1
+  min_pos_ratio: 0.0002
+  field_value: 0
+  normalize_inputs: false      # déjà normalisé à l'étape prepare
+  max_patches_per_image: 64
+  sampling:
+    boundary_oversample: 0.60  # prob. de choisir un patch contenant du boundary
+  split:
+    mode: by_pairkey
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  shuffle_seed: 2025
+
+training:
+  epochs: 5
+  batch_size: 1
+  num_workers: 0
+  optimizer: adam
+  lr: 5.0e-4
+  weight_decay: 0.0
+  amp: false
+  early_stopping:
+    monitor: bfscore_val
+    patience: 12
+    mode: max
+    min_delta: 5.0e-4
+  checkpoint:
+    monitor: bfscore_val
+    mode: max
+    save_best_only: true
+    outfile: artifacts/models/unet_lite_best.h5
+
+model:
+  name: unet_lite
+  in_channels: 4
+  num_classes: 1
+  base_filters: 16
+  #base_channels: 16
+  depth: 4
+  use_batchnorm: false
+  dropout: 0.0
+
+loss:
+  primary: bce_dice    # alternatives: tversky, surface
+  dice_smooth: 1.0
+  tversky:
+    alpha: 0.3
+    beta: 0.7
+
+metrics:
+  bfscore:
+    radius: 2          # tolérance r en pixels
+  iou: true
+  dice: true
+
+inference:
+  threshold: 0.5
+  tile:
+    size: [512, 512]
+    overlap: 64
+  out_dir: artifacts/preds
+
+logging:
+  log_level: INFO
+  train_csv: artifacts/reports/train_metrics.csv

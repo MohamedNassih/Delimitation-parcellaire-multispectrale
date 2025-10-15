@@ -1,0 +1,85 @@
+# Étape 2 — Indices spectraux & cartes d'arêtes
+# Doc 03 : Spectral Boundary Indices & Edge Pipeline
+
+io:
+  aligned_dir: artifacts/aligned
+  indices_dir: artifacts/indices
+  boundary_maps_dir: artifacts/boundary_maps
+  reports_dir: artifacts/reports
+  assert_size: [1024, 1024]
+
+numerics:
+  eps: 1.0e-6
+  float_dtype: float32
+  standardize_each_map: true   # min-max par carte avant fusion
+
+spectral_indices:
+  # Chaque entrée : enabled + paramètres éventuels
+  NDVI:
+    enabled: true   # (NIR - RED) / (NIR + RED + eps)
+  GNDVI:
+    enabled: true   # (NIR - GRE) / (NIR + GRE + eps)
+  NDRE:
+    enabled: true   # (NIR - REG) / (NIR + REG + eps)
+  BRVI:
+    enabled: true   # RED / (REG + eps)    (Brown Ratio Veg Index)
+  LR:
+    enabled: true   # log1p(NIR) - log1p(RED)
+
+edge_operators:
+  sobel:
+    enabled: true
+    ksize: 3
+  scharr:
+    enabled: false
+  log:
+    enabled: true
+    ksize: 5
+    sigma: 1.0
+  structure_tensor:
+    enabled: true
+    # fenêtres (px) pour gradients et intégration
+    rho: 2
+    sigma: 1.0
+    eigen_response: lambda1   # {lambda1, coherence}
+  morph_gradient:
+    enabled: true
+    se_radius: 2   # disque rayon
+
+fusion:
+  # Fusion pondérée en S_fused (somme pondérée des cartes normalisées)
+  weights:
+    NDVI: 0.25
+    GNDVI: 0.15
+    NDRE: 0.20
+    BRVI: 0.05
+    LR: 0.10
+    sobel: 0.10
+    log: 0.10
+    structure_tensor: 0.05
+    morph_gradient: 0.00
+  clip01: true
+  smooth_gaussian_sigma: 0.6   # lissage léger post-fusion (0 = off)
+
+seeds:
+  # Seuils pour générer les seeds NV (non-végét.) / VH (végétation homogène)
+  nv:
+    ndvi_max: 0.05
+    gndvi_max: 0.05
+    area_min_px: 64
+  vh:
+    ndvi_min: 0.35
+    texture_max: 0.10   # écart-type local (fenêtre 9×9) sur S_fused
+    area_min_px: 64
+
+runtime:
+  num_workers: 0
+  batch_size: 1
+  save_debug: true
+  log_level: INFO
+
+outputs:
+  # fichiers générés
+  save_png_quicklook: true
+  save_csv_stats: true
+  fused_suffix: "_S_fused.tif"
