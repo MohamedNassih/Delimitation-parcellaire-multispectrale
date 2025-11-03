@@ -1,5 +1,6 @@
-# Makefile — AgriEdge (CPU-only)
+# Makefile — AgriEdge (CPU-only) with Docker support
 # Usage (bash/Git Bash): make prepare / make indices / make masks / make train / make infer
+# Docker usage: make build / make shell / make docker-prepare / make docker-indices / make docker-masks / make docker-train / make docker-infer
 # Sous Windows PowerShell, vous pouvez exécuter directement les commandes python affichées ici.
 
 PY := python
@@ -11,8 +12,14 @@ MASKS := artifacts/masks_final
 REPORTS := artifacts/reports
 MODELS := artifacts/models
 
-.PHONY: prepare indices masks train infer clean dirs
+# Docker configuration
+DOCKER_IMAGE := agritech-delimitation:latest
+DOCKER_COMPOSE := docker-compose
 
+.PHONY: prepare indices masks train infer clean dirs
+.PHONY: build shell docker-prepare docker-indices docker-masks docker-train docker-infer docker-clean docker-build
+
+# Local execution targets
 dirs:
 	@$(PY) - <<PY
 import pathlib
@@ -35,6 +42,40 @@ train: dirs
 
 infer: dirs
 	$(PY) -m src.cli.infer --imgs $(ALIGNED)/NIR --cfg configs/train_unet_lite.yaml --weights $(MODELS)/unet_lite_best.h5 --out artifacts/preds
+
+# Docker-specific targets
+build:
+	@echo Building Docker image...
+	$(DOCKER_COMPOSE) build
+
+shell:
+	@echo Starting interactive shell in Docker container...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline /bin/bash
+
+docker-prepare: build
+	@echo Running prepare step in Docker...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline python -m src.cli.prepare --root $(ROOT) --out $(ALIGNED) --cfg configs/prepare.yaml
+
+docker-indices: build
+	@echo Running make_indices step in Docker...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline python -m src.cli.make_indices --aligned $(ALIGNED) --out $(INDICES) --cfg configs/indices.yaml
+
+docker-masks: build
+	@echo Running make_masks step in Docker...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline python -m src.cli.make_masks --indices $(INDICES) --boundaries $(BOUND) --out $(MASKS) --cfg configs/masks.yaml
+
+docker-train: build
+	@echo Running train step in Docker...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline python -m src.cli.train --cfg configs/train_unet_lite.yaml
+
+docker-infer: build
+	@echo Running infer step in Docker...
+	$(DOCKER_COMPOSE) run --rm agritech-pipeline python -m src.cli.infer --imgs $(ALIGNED)/NIR --cfg configs/train_unet_lite.yaml --weights $(MODELS)/unet_lite_best.h5 --out artifacts/preds
+
+docker-clean:
+	@echo Cleaning Docker containers and images...
+	-$(DOCKER_COMPOSE) down --volumes --remove-orphans
+	-docker image rm $(DOCKER_IMAGE)
 
 clean:
 	@echo Cleaning generated artifacts...

@@ -1,0 +1,26 @@
+services:
+  agritech-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agritech-delimitation
+    volumes:
+      # Mount local directories to Docker container
+      # Using relative paths for Windows+Docker Desktop compatibility
+      - ./data:/app/data
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+    working_dir: /app
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    # Environment variables
+    environment:
+      - PYTHONPATH=/app/src
+    # Network configuration (if needed)
+    networks:
+      - agritech-network
+
+networks:
+  agritech-network:
+    driver: bridge
