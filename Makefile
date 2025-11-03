@@ -1,6 +1,7 @@
-# Makefile — AgriEdge (CPU-only) with Docker support
+# Makefile — AgriEdge (CPU-only) with Docker + Web Demo support
 # Usage (bash/Git Bash): make prepare / make indices / make masks / make train / make infer
 # Docker usage: make build / make shell / make docker-prepare / make docker-indices / make docker-masks / make docker-train / make docker-infer
+# Web Demo usage: make web-build / make web-up / make web-down
 # Sous Windows PowerShell, vous pouvez exécuter directement les commandes python affichées ici.
 
 PY := python
@@ -16,8 +17,12 @@ MODELS := artifacts/models
 DOCKER_IMAGE := agritech-delimitation:latest
 DOCKER_COMPOSE := docker-compose
 
+# Web demo configuration
+WEBDEMO_COMPOSE := docker-compose -f webdemo/docker-compose.yml
+
 .PHONY: prepare indices masks train infer clean dirs
 .PHONY: build shell docker-prepare docker-indices docker-masks docker-train docker-infer docker-clean docker-build
+.PHONY: web-build web-up web-down web-shell web-clean web-logs
 
 # Local execution targets
 dirs:
@@ -76,6 +81,39 @@ docker-clean:
 	@echo Cleaning Docker containers and images...
 	-$(DOCKER_COMPOSE) down --volumes --remove-orphans
 	-docker image rm $(DOCKER_IMAGE)
+
+# Web demo targets
+web-build:
+	@echo Building web demo Docker image...
+	$(WEBDEMO_COMPOSE) build
+
+web-up:
+	@echo Starting web demo server...
+	@echo "🌐 Web demo will be available at: http://localhost:7860"
+	$(WEBDEMO_COMPOSE) up -d
+
+web-down:
+	@echo Stopping web demo server...
+	$(WEBDEMO_COMPOSE) down
+
+web-shell:
+	@echo Starting interactive shell in web demo container...
+	$(WEBDEMO_COMPOSE) run --rm webdemo /bin/bash
+
+web-clean:
+	@echo Cleaning web demo Docker resources...
+	-$(WEBDEMO_COMPOSE) down --volumes --remove-orphans
+	-docker image rm agritech-webdemo:latest
+
+web-logs:
+	@echo Showing web demo logs...
+	$(WEBDEMO_COMPOSE) logs -f
+
+web-restart: web-down web-up
+
+web-status:
+	@echo Web demo status:
+	@$(WEBDEMO_COMPOSE) ps || echo "Web demo is not running"
 
 clean:
 	@echo Cleaning generated artifacts...

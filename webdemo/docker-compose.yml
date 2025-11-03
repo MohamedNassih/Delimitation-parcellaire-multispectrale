@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  webdemo:
+    build:
+      context: .
+      dockerfile: webdemo/Dockerfile
+    container_name: agritech-webdemo
+    ports:
+      - "7860:7860"
+    volumes:
+      # Mount local directories to Docker container
+      # Using relative paths for Windows+Docker Desktop compatibility
+      - ./data:/app/data
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+      # Mount source code for development
+      - ./src:/app/src:ro
+    working_dir: /app/webdemo
+    # Keep container running
+    stdin_open: true
+    tty: true
+    # Environment variables
+    environment:
+      - PYTHONPATH=/app/src:/app/webdemo
+      - MODEL_PATH=/app/artifacts/models/unet_lite_best.h5
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Network configuration
+    networks:
+      - agritech-network
+
+networks:
+  agritech-network:
+    driver: bridge

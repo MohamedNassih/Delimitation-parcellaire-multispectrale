@@ -1,0 +1,31 @@
+# Web demo specific requirements
+# FastAPI and web framework dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Scientific computing (in addition to main project deps)
+numpy==1.26.4
+scipy==1.11.4
+pandas==2.2.2
+
+# Image processing
+opencv-python==4.9.0.80
+Pillow==10.1.0
+scikit-image==0.22.0
+tifffile==2024.2.12
+
+# Geospatial data processing
+rasterio==1.3.9
+
+# Configuration and utilities
+pyyaml==6.0.1
+tqdm==4.66.1
+joblib==1.3.2
+
+# PyTorch (CPU only)
+# torch==2.3.1  # Will be installed via official index in Dockerfile
+# torchvision==0.18.1  # Will be installed via official index in Dockerfile
+
+# Development dependencies (optional)
+python-dotenv==1.0.0
