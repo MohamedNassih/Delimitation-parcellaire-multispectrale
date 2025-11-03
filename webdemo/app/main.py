@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from inference import get_model_manager, ModelManager
+from app.inference import get_model_manager, ModelManager
 
 # Create FastAPI app
 app = FastAPI(
@@ -30,8 +30,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-static_dir = Path(__file__).parent / "static"
+# Mount static files - correct path
+static_dir = Path(__file__).parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 

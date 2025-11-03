@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   webdemo:
     build:
-      context: .
+      context: ..
       dockerfile: webdemo/Dockerfile
     container_name: agritech-webdemo
     ports:

@@ -34,16 +34,6 @@ RUN pip install --no-cache-dir -r requirements-webdemo.txt
 # Copy web demo source code
 COPY webdemo/ /app/webdemo/
 
-# Copy parent source code for model imports
-COPY src/ /app/src/
-COPY artifacts/ /app/artifacts/
-COPY configs/ /app/configs/
-
-# Create necessary directories
-RUN mkdir -p data/multispectral-images artifacts/aligned artifacts/indices \
-    artifacts/boundary_maps artifacts/masks_raw artifacts/masks_filtered \
-    artifacts/masks_final artifacts/reports artifacts/models artifacts/preds logs
-
 # Set working directory for web demo
 WORKDIR /app/webdemo
 
