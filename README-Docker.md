@@ -10,7 +10,19 @@ This guide provides instructions for running the agricultural field boundary det
 
 ## Quick Start
 
-### Option 1: Using Docker Compose directly
+### Option 1: Use Published Docker Image (Recommended)
+
+Pull the pre-built image from GitHub Container Registry:
+
+```powershell
+# Pull the latest image from GHCR
+docker pull ghcr.io/MohamedNassih/delimitation-parcellaire-multispectrale:latest
+
+# Run interactive shell
+docker run -it --rm -v ${PWD}/data:/app/data -v ${PWD}/artifacts:/app/artifacts ghcr.io/MohamedNassih/delimitation-parcellaire-multispectrale:latest /bin/bash
+```
+
+### Option 2: Using Docker Compose with Build
 
 ```powershell
 # Build the Docker image
@@ -20,7 +32,7 @@ docker-compose build
 docker-compose run --rm agritech-pipeline /bin/bash
 ```
 
-### Option 2: Using Make (recommended)
+### Option 3: Using Make (Recommended for Development)
 
 If you have Make installed (via Git Bash or WSL2):
 
@@ -89,6 +101,27 @@ The following directories are mounted as volumes:
 - Git Bash users: Use `make` commands for convenience
 - CMD users: Use docker-compose commands directly
 
+## GitHub Container Registry (GHCR)
+
+The project publishes Docker images automatically via GitHub Actions:
+
+### Available Tags
+- `latest` - Most recent stable build from main branch
+- `main-{git-sha}` - Specific build with Git commit hash
+- `pr-{pr-number}` - Builds from pull requests
+
+### Using Specific Version
+```powershell
+# Pull specific version
+docker pull ghcr.io/MohamedNassih/delimitation-parcellaire-multispectrale:main-abc123def456
+
+# Run with specific version
+docker run -it --rm -v ${PWD}/data:/app/data -v ${PWD}/artifacts:/app/artifacts ghcr.io/MohamedNassih/delimitation-parcellaire-multispectrale:main-abc123def456 /bin/bash
+```
+
+### Authentication
+No authentication required for public images. GitHub automatically handles registry authentication.
+
 ## Troubleshooting
 
 ### Container doesn't start
@@ -109,12 +142,21 @@ If you encounter permission issues with volume mounts, ensure:
 1. Docker Desktop has access to your project directory
 2. Your user account has proper permissions on the project folder
 
+### Image pull issues
+If pulling from GHCR fails:
+```powershell
+# Try logging out and back in to Docker Desktop
+docker logout ghcr.io
+docker login ghcr.io
+```
+
 ## Development Workflow
 
-1. **Build once**: `make build` (or `docker-compose build`)
-2. **Iterate quickly**: Use `make shell` to enter container
-3. **Run experiments**: Commands will persist in `./artifacts` directory
-4. **Clean when needed**: `make docker-clean`
+1. **Quick start**: Use published image from GHCR
+2. **Development**: Build locally with `make build` or `docker-compose build`
+3. **Iterate quickly**: Use `make shell` to enter container
+4. **Run experiments**: Commands will persist in `./artifacts` directory
+5. **Clean when needed**: `make docker-clean`
 
 ## Environment Details
 
@@ -123,6 +165,7 @@ If you encounter permission issues with volume mounts, ensure:
 - **GDAL/Rasterio**: System packages installed before Python dependencies
 - **Working Directory**: `/app`
 - **Python Path**: Set to include `/app/src`
+- **Registry**: ghcr.io/MohamedNassih/delimitation-parcellaire-multispectrale
 
 ## File Structure
 
