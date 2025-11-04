@@ -1,4 +1,4 @@
-# Web Demo Dockerfile for Agricultural Boundary Detection
+# Web Demo Dockerfile for Agricultural Boundary Detection - NIR Single Band
 # Based on Python 3.12-slim with GDAL dependencies
 
 FROM python:3.12-slim
@@ -33,6 +33,10 @@ RUN pip install --no-cache-dir -r requirements-webdemo.txt
 
 # Copy web demo source code
 COPY webdemo/ /app/webdemo/
+
+# Copy source code for model loading (minimal dependencies)
+COPY src/models/unet_lite.py /app/src/models/unet_lite.py
+COPY src/io/readwrite.py /app/src/io/readwrite.py
 
 # Set working directory for web demo
 WORKDIR /app/webdemo

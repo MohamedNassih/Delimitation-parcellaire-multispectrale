@@ -1,6 +1,6 @@
 """Inference module for the agricultural boundary detection model.
 
-Handles both lightweight pipeline (PNG/JPG) and full pipeline (GeoTIFF).
+Handles single NIR band images for field boundary detection.
 """
 from __future__ import annotations
 
@@ -107,7 +107,7 @@ class ModelManager:
             self.model = UNetLite(in_ch=4, base_ch=32, out_ch=1, final_activation=True)
     
     def infer_png_jpg(self, image_data: bytes) -> Tuple[np.ndarray, float]:
-        """Perform inference on PNG/JPG image.
+        """Perform inference on PNG/JPG image as NIR single band.
         
         Args:
             image_data: Raw image bytes
@@ -121,21 +121,14 @@ class ModelManager:
         img = Image.open(io.BytesIO(image_data)).convert('RGB')
         img_array = np.array(img).astype(np.float32) / 255.0
         
-        # Convert RGB to required 4-channel format (REG/RED/NIR/GRE)
-        # For demo purposes, we'll use a simple mapping
-        # REG ~ Red channel, RED ~ Red channel, NIR ~ Blue channel, GRE ~ Green channel
+        # For NIR images, treat the image as already being NIR data
+        # We'll use the blue channel as the NIR approximation
         height, width = img_array.shape[:2]
+        nir_channel = img_array[:, :, 2]  # Use blue channel as NIR
         
-        # Create 4-channel stack
-        red = img_array[:, :, 0]  # RED channel
-        green = img_array[:, :, 1]  # GRE channel  
-        blue = img_array[:, :, 2]  # NIR channel
-        
-        # For REG channel, use red channel as approximation
-        reg = red.copy()
-        
-        # Stack as [REG, RED, NIR, GRE]
-        x4 = np.stack([reg, red, blue, green], axis=0)
+        # Create 4-channel stack by duplicating NIR channel (simplified approach)
+        # This simulates a 4-band image where all bands contain NIR information
+        x4 = np.stack([nir_channel, nir_channel, nir_channel, nir_channel], axis=0)
         
         # Ensure correct shape and type
         x4 = ensure_float01(x4)
@@ -162,18 +155,12 @@ class ModelManager:
         # Load GeoTIFF with rasterio
         with rasterio.MemoryFile(io.BytesIO(image_data)) as memfile:
             with memfile.open() as dataset:
-                # Read all bands
-                bands = []
-                for i in range(1, dataset.count + 1):
-                    band = dataset.read(i)
-                    bands.append(ensure_float01(band))
-                
-                # Ensure we have 4 bands (REG, RED, NIR, GRE)
-                if len(bands) < 4:
-                    raise ValueError(f"GeoTIFF must have at least 4 bands, found {len(bands)}")
-                
-                # Use first 4 bands
-                x4 = np.stack(bands[:4], axis=0).astype(np.float32)
+                # Read first band (assuming it's NIR)
+                band = dataset.read(1)
+                nir_band = ensure_float01(band)
+        
+        # Create 4-channel stack by duplicating NIR band
+        x4 = np.stack([nir_band, nir_band, nir_band, nir_band], axis=0)
         
         # Perform inference
         with torch.no_grad():
@@ -225,8 +212,9 @@ class ModelManager:
                         'width': dataset.width,
                         'height': dataset.height,
                         'bands': dataset.count,
-                        'dtype': str(dataset.dtype),
-                        'driver': dataset.driver
+                        'dtype': str(dataset.dtypes[0]) if dataset.dtypes else "unknown",
+                        'driver': dataset.driver,
+                        'type': 'NIR GeoTIFF'
                     }
         else:
             img = Image.open(io.BytesIO(image_data))
@@ -235,7 +223,8 @@ class ModelManager:
                 'height': img.height,
                 'bands': len(img.getbands()) if hasattr(img, 'getbands') else 1,
                 'format': img.format,
-                'mode': img.mode
+                'mode': img.mode,
+                'type': 'NIR Image (RGB interpretation)'
             }
         
         return info
